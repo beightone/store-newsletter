@@ -1,4 +1,4 @@
-import React, { ComponentType, PropsWithChildren, FormEvent } from 'react'
+import React, { ComponentType, PropsWithChildren, FormEvent, useEffect } from 'react'
 import { FormattedMessage } from 'react-intl'
 import { useCssHandles, CssHandlesTypes } from 'vtex.css-handles'
 import { usePixel } from 'vtex.pixel-manager'
@@ -8,7 +8,7 @@ import {
   NewsletterContextProvider,
   useNewsletterDispatch,
   useNewsletterState,
-  MutationArguments,
+  Arguments,
   State,
 } from './components/NewsletterContext'
 import {
@@ -16,6 +16,7 @@ import {
   validatePhoneNumber,
   validateUserName,
 } from './modules/formValidators'
+import { useSubscribeNewsletter } from './hook/useSubscribeNewsletter'
 
 export const CSS_HANDLES = [
   'newsletterForm',
@@ -53,10 +54,14 @@ function generateMutationVariables({
   phone: string | undefined | null
   customFields: CustomField[] | null
 }) {
-  const variables: MutationArguments = { email, fields: {} }
+  const variables: Arguments = { email, fields: {} }
 
   if (name) {
     variables.fields.name = name
+  }
+
+  if (email) {
+    variables.fields.email = email
   }
 
   if (phone) {
@@ -74,7 +79,7 @@ function generateMutationVariables({
 
 function Newsletter(props: PropsWithChildren<Props>) {
   const {
-    ErrorState,
+    // ErrorState,
     SuccessState,
     LoadingState,
     classes,
@@ -87,29 +92,28 @@ function Newsletter(props: PropsWithChildren<Props>) {
     name,
     phone,
     submission,
-    subscribe,
     customFields,
   } = useNewsletterState()
+  const { formState, subscribeNewsletter } = useSubscribeNewsletter()
 
   const dispatch = useNewsletterDispatch()
   const { push } = usePixel()
   const { handles } = useCssHandles(CSS_HANDLES, { classes })
 
-  if (submission.loading && LoadingState) {
+  useEffect(() => {
+  }, [submission, formState])
+
+  if (formState.loading && LoadingState) {
     return <LoadingState />
   }
 
-  if (submission.error) {
-    return ErrorState ? (
-      <ErrorState />
-    ) : (
-      <p className={handles.defaultErrorMessage}>
-        <FormattedMessage id="store/newsletter-submit-error.default" />
-      </p>
-    )
+  if (formState.error) {
+    <p className={handles.defaultErrorMessage}>
+      <FormattedMessage id="store/newsletter-submit-error.default" />
+    </p>
   }
 
-  if (submission.data?.subscribeNewsletter) {
+  if (formState.data?.DocumentId) {
     return SuccessState ? (
       <SuccessState subscribedUserData={{ email, name, phone }} />
     ) : (
@@ -121,13 +125,7 @@ function Newsletter(props: PropsWithChildren<Props>) {
 
   function validateFormInputs() {
     const isEmailValid = validateEmail(email)
-
-    // name === null is valid because it means there is no name input in the
-    // newsletter form.
     const isNameValid = name === null || validateUserName(name)
-
-    // phone === null is valid because it means there is no phone input in the
-    // newsletter form.
     const isPhoneValid = phone === null || validatePhoneNumber(phone)
 
     dispatch({
@@ -165,14 +163,14 @@ function Newsletter(props: PropsWithChildren<Props>) {
 
     const pixelEvent: PixelEventTypes.PixelData = customEventId
       ? {
-          id: customEventId,
-          event: 'newsletterSubscription',
-          data: pixelData,
-        }
+        id: customEventId,
+        event: 'newsletterSubscription',
+        data: pixelData,
+      }
       : {
-          event: 'newsletterSubscription',
-          data: pixelData,
-        }
+        event: 'newsletterSubscription',
+        data: pixelData,
+      }
 
     push(pixelEvent)
 
@@ -183,10 +181,12 @@ function Newsletter(props: PropsWithChildren<Props>) {
       customFields,
     })
 
-    // The '.catch' here is to prevent 'unhandled promise rejection'.
-    // Proper error handling for this is implemented by NewsletterContext
-    // using the variables returned by the 'useMutation' call it performs.
-    subscribe({ variables: mutationVariables }).catch(() => {})
+    console.log("mutationVariables",mutationVariables)
+
+    subscribeNewsletter({
+      email,
+      name,
+    })
   }
 
   return (

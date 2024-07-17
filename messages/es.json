@@ -1,4 +1,5 @@
 {
+  "admin/editor.newsletter-form.entty": "NW",
   "admin/editor.newsletter-form.title": "Newsletter",
   "admin/editor.newsletter-input-email.title": "Entrada de correo electrónico",
   "admin/editor.newsletter-input-email.placeholderText.title": "Marcador de posición de entrada de correo electrónico",

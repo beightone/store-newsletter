@@ -1,22 +1,18 @@
-import { ApolloError } from 'apollo-client'
+// import { ApolloError } from 'apollo-client'
 import React, {
   createContext,
   useReducer,
+  useEffect,
   useContext,
   PropsWithChildren,
-  useEffect,
 } from 'react'
-import { MutationFunction, useMutation } from 'react-apollo'
 
-import subscribeNewsletterMutation from '../graphql/subscribeNewsletter.gql'
+import { useSubscribeNewsletter } from '../hook/useSubscribeNewsletter'
 
-interface SubmissionState {
-  error: undefined | ApolloError
-  data: { subscribeNewsletter: boolean } | undefined
-  loading: boolean
-}
+import { SubscribeNewsletterStateTypes, SubscribeNewsletterFunctionType } from '../typings/subscribe'
 
-export interface MutationArguments {
+
+export interface Arguments {
   email: string
   fields: {
     name?: string
@@ -41,11 +37,8 @@ export interface State {
   invalidEmail: boolean
   invalidName: boolean
   invalidPhone: boolean
-  submission: SubmissionState
-  subscribe: MutationFunction<
-    { subscribeNewsletter: boolean },
-    MutationArguments
-  >
+  submission: SubscribeNewsletterStateTypes
+  subscribe: SubscribeNewsletterFunctionType
 }
 
 interface UpdateEmailAction {
@@ -88,9 +81,9 @@ interface SetCustomValuesAction {
   value: State['customFields']
 }
 
-interface SetMutationValues {
-  type: 'SET_MUTATION_VALUES'
-  value: SubmissionState
+interface SetSubmissionAction {
+  type: 'SET_SUBMISSION'
+  value: State['submission']
 }
 
 type Action =
@@ -99,10 +92,11 @@ type Action =
   | UpdatePhoneAction
   | UpdateConfirmationAction
   | SetInvalidEmailAction
-  | SetMutationValues
+  // | SetMutationValues
   | SetInvalidNameAction
   | SetInvalidPhoneAction
   | SetCustomValuesAction
+  | SetSubmissionAction
 type Dispatch = (action: Action) => void
 
 const NewsletterStateContext = createContext<State | undefined>(undefined)
@@ -152,7 +146,7 @@ function newsletterContextReducer(state: State, action: Action): State {
         invalidPhone: action.value,
       }
 
-    case 'SET_MUTATION_VALUES': {
+    case 'SET_SUBMISSION': {
       return {
         ...state,
         submission: action.value,
@@ -172,10 +166,7 @@ function newsletterContextReducer(state: State, action: Action): State {
 }
 
 function NewsletterContextProvider(props: PropsWithChildren<{}>) {
-  const [subscribeToNewsletter, { data, loading, error }] = useMutation<
-    { subscribeNewsletter: boolean },
-    MutationArguments
-  >(subscribeNewsletterMutation)
+  const { formState, subscribeNewsletter } = useSubscribeNewsletter()
 
   const [state, dispatch] = useReducer(newsletterContextReducer, {
     email: '',
@@ -186,21 +177,14 @@ function NewsletterContextProvider(props: PropsWithChildren<{}>) {
     invalidEmail: false,
     invalidName: false,
     invalidPhone: false,
-    subscribe: subscribeToNewsletter,
-    submission: {
-      data,
-      loading,
-      error,
-    },
+    subscribe: subscribeNewsletter,
+    submission: formState,
   })
 
-  // Update mutation variables in State
   useEffect(() => {
-    dispatch({
-      type: 'SET_MUTATION_VALUES',
-      value: { loading, error, data },
-    })
-  }, [error, loading, data])
+    dispatch({type: 'SET_SUBMISSION', value: formState})
+  }, [formState])
+
 
   return (
     <NewsletterStateContext.Provider value={state}>
