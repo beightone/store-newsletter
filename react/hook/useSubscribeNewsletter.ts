@@ -17,20 +17,15 @@ export const useSubscribeNewsletter = () => {
       loading: true,
     }))
 
-    console.log('@@payload', payload);
     try {
       //@ts-ignore
       const data = await createMDDocument({ entity: 'NW', payload });
-      console.log('@@data', data);
 
       setFormState({
         ...INITIAL_STATE,
         data,
       });
-      console.log('@@formState', formState);
     } catch (error) {
-      console.log('@@error', error);
-      console.log({ error });
 
       setFormState({
         ...INITIAL_STATE,

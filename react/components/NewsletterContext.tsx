@@ -92,7 +92,6 @@ type Action =
   | UpdatePhoneAction
   | UpdateConfirmationAction
   | SetInvalidEmailAction
-  // | SetMutationValues
   | SetInvalidNameAction
   | SetInvalidPhoneAction
   | SetCustomValuesAction

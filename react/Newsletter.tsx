@@ -1,4 +1,4 @@
-import React, { ComponentType, PropsWithChildren, FormEvent, useEffect } from 'react'
+import React, { ComponentType, PropsWithChildren, FormEvent, useEffect, useState } from 'react'
 import { FormattedMessage } from 'react-intl'
 import { useCssHandles, CssHandlesTypes } from 'vtex.css-handles'
 import { usePixel } from 'vtex.pixel-manager'
@@ -79,7 +79,6 @@ function generateMutationVariables({
 
 function Newsletter(props: PropsWithChildren<Props>) {
   const {
-    // ErrorState,
     SuccessState,
     LoadingState,
     classes,
@@ -91,7 +90,6 @@ function Newsletter(props: PropsWithChildren<Props>) {
     email,
     name,
     phone,
-    submission,
     customFields,
   } = useNewsletterState()
   const { formState, subscribeNewsletter } = useSubscribeNewsletter()
@@ -100,8 +98,15 @@ function Newsletter(props: PropsWithChildren<Props>) {
   const { push } = usePixel()
   const { handles } = useCssHandles(CSS_HANDLES, { classes })
 
+  const [isFormValid, setIsFormValid] = useState(false)
+
   useEffect(() => {
-  }, [submission, formState])
+    const isEmailValid = validateEmail(email)
+    const isNameValid = name === null || validateUserName(name)
+    const isPhoneValid = phone === null || validatePhoneNumber(phone)
+
+    setIsFormValid(isEmailValid && isNameValid && isPhoneValid)
+  }, [email, name, phone])
 
   if (formState.loading && LoadingState) {
     return <LoadingState />
@@ -192,6 +197,9 @@ function Newsletter(props: PropsWithChildren<Props>) {
   return (
     <form className={handles.newsletterForm} onSubmit={handleSubmit}>
       {children}
+      <button className={`newsletter-submit`} type="submit" disabled={!isFormValid}>
+        Registrar
+      </button>
     </form>
   )
 }
